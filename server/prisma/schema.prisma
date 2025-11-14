@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int           @id @default(autoincrement())
+  name             String
+  email            String?       @unique
+  password         String?
+  role             String
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  transactions     Transaction[] @relation("CreatedTransactions")
+  createdAt        DateTime      @default(now())
+}
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String
+  parentId      Int?
+  parent        Category?  @relation("Subcategories", fields: [parentId], references: [id])
+  subcategories Category[] @relation("Subcategories")
+  meta          Json?
+  createdAt     DateTime   @default(now())
+
+  // relations to Transaction
+  transactions            Transaction[] @relation("CategoryTransactions") // primary category
+  subcategoryTransactions Transaction[] @relation("SubcategoryTransactions") // used as subcategory
+}
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  type          String // "credit" or "debit"
+  amount        Decimal
+  categoryId    Int
+  subcategoryId Int?
+  note          String?
+  date          DateTime @default(now())
+  employee      String?
+  reference     String?
+  extraDetails  Json?
+  createdById   Int
+
+  // relations
+  category    Category  @relation("CategoryTransactions", fields: [categoryId], references: [id])
+  subcategory Category? @relation("SubcategoryTransactions", fields: [subcategoryId], references: [id])
+  createdBy   User      @relation("CreatedTransactions", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+}
